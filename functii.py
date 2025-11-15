@@ -1,7 +1,15 @@
 import numpy as np
 import pandas as pd
+from pandas.core.dtypes.common import is_numeric_dtype
 from scipy.stats import shapiro, kstest, norm, chi2
 
+def nan_replace_df(t: pd.DataFrame):
+    for c in t.columns:
+        if any(t[c].isna()):
+            if is_numeric_dtype(t[c]):
+                t.fillna({c: t[c].mean()}, inplace=True)
+            else:
+                t.fillna({c: t[c].mode()[0]}, inplace=True)
 
 def nan_replace(matrice_date: np.ndarray):
     # Gaseste toate aparitiile valorilor NaN - returneaza o matrice bitmask
@@ -127,32 +135,32 @@ def test_chi2(vector_date: np.ndarray):
     return valoare_p
 
 
-def calcul_procent(serie_date: pd.Series):
+
+def f_entropy(dataframe_date: pd.DataFrame):
     """
-    Calculeaza ponderea (procentul) fiecarui element dintr-o serie
-    raportat la suma totala a seriei.
+    Calculeaza Entropia Shannon (Indexul de diversitate) pentru fiecare coloana.
     """
-    suma_totala = serie_date.sum()
+    # Extrage valorile intr-o matrice NumPy (fostul 'x')
+    matrice_valori = dataframe_date.values
 
-    if suma_totala == 0:
-        return pd.Series(0.0, index=serie_date.index, dtype=float)
+    # Calculeaza totalul pe fiecare coloana (axis=0) (fostul 'tx')
+    total_coloane = np.sum(matrice_valori, axis=0)
+    # Previne impartirea la zero (logica originala)
+    total_coloane[total_coloane == 0] = 1
 
-    return serie_date * 100 / suma_totala
+    # Calculeaza matricea de proportii (fostul 'p')
+    # p[i, j] = x[i, j] / total_coloane[j]
+    proportii = matrice_valori / total_coloane
 
+    # Gestioneaza proportiile egale cu zero (logica originala)
+    proportii[proportii == 0] = 1
 
-import numpy as np
-import pandas as pd
+    # Calculeaza Entropia Shannon
+    # E[j] = - Suma_i ( p[i,j] * log2(p[i,j]) )
+    entropie = -np.sum(proportii * np.log2(proportii), axis=0)
 
-
-def calcul_procent(serie_date: pd.Series):
-    """
-    Calculeaza ponderea (procentul) fiecarui element dintr-o serie
-    raportat la suma totala a seriei.
-    """
-
-    # Calculeaza (valoare * 100) / suma_totala
-    # Logica originala nu trateaza cazul cand suma este 0.
-    return serie_date * 100 / serie_date.sum()
+    # Returneaza rezultatul ca o Serie Pandas, pastrand numele coloanelor
+    return pd.Series(entropie, dataframe_date.columns)
 
 
 def f_disim(dataframe_date: pd.DataFrame):
@@ -191,31 +199,15 @@ def f_disim(dataframe_date: pd.DataFrame):
     return pd.Series(index_disimilaritate, dataframe_date.columns)
 
 
-def f_entropy(dataframe_date: pd.DataFrame):
+def calcul_procent(serie_date: pd.Series):
     """
-    Calculeaza Entropia Shannon (Indexul de diversitate) pentru fiecare coloana.
+    Calculeaza ponderea (procentul) fiecarui element dintr-o serie
+    raportat la suma totala a seriei.
     """
-    # Extrage valorile intr-o matrice NumPy (fostul 'x')
-    matrice_valori = dataframe_date.values
 
-    # Calculeaza totalul pe fiecare coloana (axis=0) (fostul 'tx')
-    total_coloane = np.sum(matrice_valori, axis=0)
-    # Previne impartirea la zero (logica originala)
-    total_coloane[total_coloane == 0] = 1
-
-    # Calculeaza matricea de proportii (fostul 'p')
-    # p[i, j] = x[i, j] / total_coloane[j]
-    proportii = matrice_valori / total_coloane
-
-    # Gestioneaza proportiile egale cu zero (logica originala)
-    proportii[proportii == 0] = 1
-
-    # Calculeaza Entropia Shannon
-    # E[j] = - Suma_i ( p[i,j] * log2(p[i,j]) )
-    entropie = -np.sum(proportii * np.log2(proportii), axis=0)
-
-    # Returneaza rezultatul ca o Serie Pandas, pastrand numele coloanelor
-    return pd.Series(entropie, dataframe_date.columns)
+    # Calculeaza (valoare * 100) / suma_totala
+    # Logica originala nu trateaza cazul cand suma este 0.
+    return serie_date * 100 / serie_date.sum()
 
 
 def acp(matrice_date: np.ndarray, ddof=0, scal=True):

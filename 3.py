@@ -2,7 +2,7 @@ import sys
 import numpy as np
 import pandas as pd
 
-from functii import nan_replace, acp, tabelare_varianta, salvare_ndarray
+from functii import nan_replace_df, acp, tabelare_varianta, salvare_ndarray
 from grafice import plot_varianta, show, corelograma, plot_scoruri_corelatii
 
 # --- Configurarea Optiunilor de Afisare ---
@@ -12,7 +12,7 @@ np.set_printoptions(3, sys.maxsize, suppress=True)
 
 # --- 1. Incarcarea si Pregatirea Datelor ---
 df_date = pd.read_csv("data_in/Teritorial2022/Teritorial_2022.csv", index_col=0)
-nan_replace(df_date)
+nan_replace_df(df_date)
 
 # Extrage numele coloanelor care contin variabilele de analizat
 nume_variabile_observate = list(df_date.columns)[3:]
