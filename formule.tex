@@ -1,0 +1,153 @@
+\documentclass[12pt, a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[romanian]{babel}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsfonts}
+\usepackage{geometry}
+\geometry{a4paper, margin=1in}
+
+\title{Formular de Analiza a Datelor si ACP (cu Explicatii)}
+\author{Extras din documente}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Document 1: Analiza Preliminara a Datelor}
+
+Varianta (caz discret): Media ponderata a patratelor abaterilor de la medie.
+\begin{equation}
+\sigma^2 = \sum_{x \in R} (x - \mu)^2 \cdot f(x)
+\end{equation}
+
+Varianta (pentru esantion / repartitie uniforma): Media patratelor abaterilor de la medie.
+\begin{equation}
+\sigma^2 = \frac{1}{n} \sum_{i=1}^{n} (x_i - \mu)^2
+\end{equation}
+
+Abaterea standard: Radacina patrata a variantei; masoara împrastierea în unitatile variabilei.
+\begin{equation}
+\sigma = \sqrt{\sigma^2}
+\end{equation}
+
+Coeficientul de variatie: Raportul dintre abaterea standard si medie; o masura relativa a împrastierii.
+\begin{equation}
+C_v = \frac{\sigma}{\mu}
+\end{equation}
+
+\subsection{Indicatori de Forma}
+
+Asimetria (Skewness): Masoara gradul de simetrie a distributiei (bazata pe momentul 3).
+\begin{equation}
+S = \frac{MC_3}{\sigma^3}
+\end{equation}
+
+Aplatizarea (Kurtosis): Masoara 'boltirea' distributiei (bazata pe momentul 4).
+\begin{equation}
+K = \frac{MC_4}{\sigma^4} \quad \text{sau} \quad K = \frac{MC_4}{\sigma^4} - 3
+\end{equation}
+
+\subsection{Teste de Concordanta si Independenta}
+
+Statistica testului $\chi^2$ de concordanta: Masoara diferenta dintre frecventele observate ($fa$) si cele asteptate ($fe$).
+\begin{equation}
+\chi_{\text{Calculat}}^2 = \sum_{i=1}^{m} \frac{(fa_i - fe_i)^2}{fe_i}
+\end{equation}
+
+Statistica testului Smirnov-Kolmogorov: Diferenta maxima absoluta dintre functia de repartitie empirica ($Fe$) si cea teoretica ($F$).
+\begin{equation}
+D = \max_{j} |Fe(x_{(j)}) - F(x_{(j)})|
+\end{equation}
+
+Statistica testului $\chi^2$ de independenta (frecvente absolute): Testeaza daca exista o asociere între doua variabile calitative.
+\begin{equation}
+\chi_{\text{Calculat}}^2 = \sum_{i=1}^{p} \sum_{j=1}^{q} \frac{(n_{ij} - ne_{ij})^2}{ne_{ij}}
+\end{equation}
+
+Statistica $\chi^2$ de independenta (frecvente relative): Varianta de calcul bazata pe proportii (frecvente *f*).
+\begin{equation}
+\chi_{\text{Calculat}}^2 = T \cdot \sum_{i=1}^{p} \sum_{j=1}^{q} \frac{(f_{ij} - f_{i\bullet} f_{\bullet j})^2}{f_{i\bullet} f_{\bullet j}}
+\end{equation}
+
+\subsection{Relatia dintre Variabile Cantitative}
+
+Modelul de regresie liniara simpla: Relatia dintre *y* si *x*, incluzând un termen de eroare *e*.
+\begin{equation}
+y_i = ax_i + b + e_i
+\end{equation}
+
+Covarianta: Masoara tendinta a doua variabile de a se modifica împreuna.
+\begin{equation}
+\text{Cov}(X,Y) = \frac{1}{n} \sum_{i=1}^{n} (x_i - \overline{x})(y_i - \overline{y})
+\end{equation}
+
+Coeficientii regresiei liniare: *a* este panta (calculata cu covarianta) si *b* este interceptul.
+\begin{equation}
+a = \frac{\text{Cov}(X,Y)}{\text{Var}(X)} \quad \text{si} \quad b = \overline{y} - a\overline{x}
+\end{equation}
+
+Descompunerea variantei: Varianta totala = Varianta explicata de model + Varianta reziduala.
+\begin{equation}
+\text{Var}(y) = \text{Var}(ax+b) + \text{Var}(e)
+\end{equation}
+
+Coeficientul de determinare ($R^2$): Proportia din varianta lui *y* care este explicata de *x*.
+\begin{equation}
+R^2(x,y) = \frac{\text{Var}(ax+b)}{\text{Var}(y)} = \frac{\text{Cov}(x,y)^2}{\text{Var}(x)\text{Var}(y)}
+\end{equation}
+
+Coeficientul de corelatie liniara (R): Masoara puterea si directia legaturii liniare (de la -1 la 1).
+\begin{equation}
+R = \frac{\text{Cov}(x,y)}{\sigma_x \sigma_y}
+\end{equation}
+
+\section{Document 2: Analiza în Componente Principale (Spatiul Instantelor)}
+
+Definitia componentei principale (combinatie liniara): Componenta *k* este o suma ponderata (combinatie liniara) a variabilelor originale *X*.
+\begin{equation}
+C_k = a_{1k}X_1 + a_{2k}X_2 + \cdots + a_{mk}X_m
+\end{equation}
+
+Solutia (Problema valorilor si vectorilor proprii): Solutia $a_1$ este vectorul propriu al matricei de covarianta $\frac{1}{n} X^t X$.
+\begin{equation}
+\frac{1}{n} X^t X a_1 = \lambda a_1
+\end{equation}
+
+Varianta explicata este egala cu valoarea proprie: Varianta maxima explicata de componenta este $\lambda$, valoarea proprie corespunzatoare vectorului $a_1$.
+\begin{equation}
+\frac{1}{n} a_1^t X^t X a_1 = \lambda
+\end{equation}
+
+\section{Document 3: Analiza în Componente Principale (Evaluare)}
+
+\subsection{Deducere (Spatiul Variabilelor)}
+
+Varianta explicata de axa k: Varianta (inertia) componentei *k* este egala cu valoarea proprie $\alpha_k$.
+\begin{equation}
+\text{Varianta}(C_k) = \alpha_k
+\end{equation}
+
+Suma $R^2$ este egala cu valoarea proprie: Varianta explicata ($\alpha_k$) este, de asemenea, suma corelatiilor la patrat dintre componenta *k* si toate variabilele originale.
+\begin{equation}
+\sum_{j=1}^{m} R^2(C_k, X_j) = \alpha_k
+\end{equation}
+
+Contributia instantei *i* la varianta axei *j*: Arata ce procent din varianta totala a axei *j* este 'generat' de punctul *i*.
+\begin{equation}
+\beta_{ij} = \frac{1}{n} \cdot \frac{c_{ij}^2}{\alpha_j}
+\end{equation}
+
+Comunalitatea variabilei *Xj* (pentru primele *s* componente): Cât la suta din varianta variabilei originale *Xj* este 'capturata' de primele *s* componente.
+\begin{equation}
+\text{Comunalitate}(X_j) = \sum_{k=1}^{s} R(X_j, C_k)^2
+\end{equation}
+
+Corelatii factoriale (Factor Loadings) - vectorul de corelatii: Calculeaza corelatia dintre componenta *k* si *toate* variabilele originale. Aceasta este formula folosita în problema din imagine.
+\begin{equation}
+R_k = a_k \sqrt{\alpha_k}
+\end{equation}
+
+
+\end{document}
