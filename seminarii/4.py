@@ -49,6 +49,11 @@ tabel_varianta.round(3).to_csv("data_out/Varianta.csv")
 # de componente sugerat de cele trei criterii
 k1_kaiser, k2_acoperire, k3_cattell = plot_varianta(valori_proprii)
 
+# Determina numarul optim de componente (minimul dintre criteriile valide)
+# Se filtreaza valorile None inainte de a calcula minimul
+criterii_valide = [k for k in [k1_kaiser, k2_acoperire, k3_cattell] if k is not None]
+nr_comp_semnificative = min(criterii_valide) if criterii_valide else 1
+
 # --- 5. Calculul Componentelor si Corelatiilor Factoriale ---
 
 # Calculeaza componentele principale (scorurile) (C = X_prelucrat * A)
@@ -80,6 +85,18 @@ corelograma(
     annot=nr_coloane < 10,  # 'annot=True' daca sunt putine variabile
 )
 
+# Generare automata: Cercul Corelatiilor pentru toate axele semnificative
+for i in range(1, nr_comp_semnificative):
+    for j in range(i + 1, nr_comp_semnificative + 1):
+        plot_scoruri_corelatii(
+            df_corelatii_var_comp,
+            varx="C" + str(i),
+            vary="C" + str(j),
+            titlu="Corelatii factoriale",
+            etichete=df_corelatii_var_comp.index,
+            corelatii=True # Flag pentru a desena cercul unitate
+        )
+
 # --- 6. Analiza Scorurilor ---
 
 # Calculeaza scorurile standardizate (fost 's')
@@ -103,7 +120,71 @@ df_scoruri_standardizate = salvare_ndarray(
     "data_out/S.csv",
 )
 
-plot_scoruri_corelatii(df_componente_principale, titlu="Plot componente")
+# Generare automata: Plot Scoruri pentru toate axele semnificative
+for i in range(1, nr_comp_semnificative):
+    for j in range(i + 1, nr_comp_semnificative + 1):
+        plot_scoruri_corelatii(
+            df_componente_principale,
+            varx="C" + str(i),
+            vary="C" + str(j),
+            titlu="Plot componente",
+            etichete=df_date.index
+        )
 
-# Afiseaza toate graficele generate (Scree Plot, Corelograme, Plot Scoruri)
-# show()
+# --- 7. Calculul Indicatorilor Avansati (Cosinusuri, Contributii, Comunalitati) ---
+
+# Calcul intermediar: patratul componentelor (C^2)
+patrat_componente = componente_principale * componente_principale
+
+# 7.1. Calcul Cosinusuri (Calitatea reprezentarii observatiilor)
+# Formula: C^2 / Suma_linie(C^2)
+cosinusuri = (patrat_componente.T / np.sum(patrat_componente, axis=1)).T
+
+df_cosinusuri = salvare_ndarray(
+    cosinusuri,
+    df_date.index,
+    df_componente_principale.columns,
+    df_date.index.name,
+    "data_out/Cosin.csv"
+)
+
+corelograma(df_cosinusuri, "Cosinusuri", vmin=0, cmap="Greens", annot=False)
+
+# 7.2. Calcul Contributii (Contributia observatiilor la formarea axelor)
+# Formula: (C^2 * 100) / Suma_coloana(C^2)
+# Nota: Suma pe coloana a lui C^2 este proportionala cu valoarea proprie * n
+contributii = patrat_componente * 100 / np.sum(patrat_componente, axis=0)
+
+df_contributii = salvare_ndarray(
+    contributii,
+    df_date.index,
+    df_componente_principale.columns,
+    df_date.index.name,
+    "data_out/Contrib.csv"
+)
+
+corelograma(df_contributii, "Contributii", vmin=0, cmap="Blues", annot=False)
+
+# 7.3. Calcul Comunalitati (Calitatea reprezentarii variabilelor)
+# Formula: Suma cumulativa a patratului corelatiilor factoriale (R_XC^2)
+patrat_corelatii = matrice_corelatii_var_comp * matrice_corelatii_var_comp
+comunalitati = np.cumsum(patrat_corelatii, axis=1)
+
+df_comunalitati = salvare_ndarray(
+    comunalitati,
+    nume_variabile_observate,
+    df_corelatii_var_comp.columns,
+    "Indicatori",
+    "data_out/Comm.csv"
+)
+
+corelograma(
+    df_comunalitati,
+    "Comunalitati",
+    vmin=0,
+    cmap="Reds",
+    annot=len(nume_variabile_observate) < 15
+)
+
+# Afiseaza toate graficele generate
+show()

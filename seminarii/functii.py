@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 from pandas.core.dtypes.common import is_numeric_dtype
 from scipy.stats import shapiro, kstest, norm, chi2
+from sklearn.metrics import confusion_matrix, cohen_kappa_score, accuracy_score
 
 def nan_replace_df(t: pd.DataFrame):
     for c in t.columns:
@@ -10,6 +11,27 @@ def nan_replace_df(t: pd.DataFrame):
                 t.fillna({c: t[c].mean()}, inplace=True)
             else:
                 t.fillna({c: t[c].mode()[0]}, inplace=True)
+
+def calcul_metrici(y_true, y_pred, clase):
+    """
+    Calculeaza matricea de confuzie, acuratetea globala si indexul Cohen-Kappa.
+    """
+    # 1. Matricea de confuzie
+    cm = confusion_matrix(y_true, y_pred, labels=clase)
+    df_cm = pd.DataFrame(cm, index=clase, columns=clase)
+    df_cm.index.name = "Real"
+    df_cm.columns.name = "Predictie"
+
+    # 2. Acuratetea si Kappa
+    acc = accuracy_score(y_true, y_pred)
+    kappa = cohen_kappa_score(y_true, y_pred)
+
+    df_metrics = pd.DataFrame({
+        "Acuratete": [acc],
+        "Kappa": [kappa]
+    }, index=["Valori"])
+
+    return df_cm, df_metrics
 
 def nan_replace(matrice_date: np.ndarray):
     # Gaseste toate aparitiile valorilor NaN - returneaza o matrice bitmask
@@ -135,7 +157,6 @@ def test_chi2(vector_date: np.ndarray):
     return valoare_p
 
 
-
 def f_entropy(dataframe_date: pd.DataFrame):
     """
     Calculeaza Entropia Shannon (Indexul de diversitate) pentru fiecare coloana.
@@ -249,7 +270,7 @@ def acp(matrice_date: np.ndarray, ddof=0, scal=True):
     # Daca scal=False, 'matrice_prelucrata' e doar centrata,
     #   deci 'matrice_cov_cor' va fi matricea de covarianta.
     matrice_cov_cor = (
-        (1 / (nr_linii - ddof)) * matrice_prelucrata.T @ matrice_prelucrata
+            (1 / (nr_linii - ddof)) * matrice_prelucrata.T @ matrice_prelucrata
     )
 
     # 4. Calculul valorilor si vectorilor proprii
@@ -302,19 +323,19 @@ def tabelare_varianta(valori_proprii_sortate: np.ndarray):
     varianta_totala = sum(valori_proprii_sortate)
 
     tabel_varianta["Procent varianta"] = (
-        valori_proprii_sortate * 100
-    ) / varianta_totala
+                                                 valori_proprii_sortate * 100
+                                         ) / varianta_totala
     tabel_varianta["Procent cumulat"] = np.cumsum(tabel_varianta["Procent varianta"])
 
     return tabel_varianta
 
 
 def salvare_ndarray(
-    matrice_date: np.ndarray,
-    nume_linii,
-    nume_coloane,
-    nume_index="",
-    nume_fisier_output="out.csv",
+        matrice_date: np.ndarray,
+        nume_linii,
+        nume_coloane,
+        nume_index="",
+        nume_fisier_output="out.csv",
 ):
     dataframe_temporar = pd.DataFrame(
         matrice_date, index=nume_linii, columns=nume_coloane
@@ -325,3 +346,89 @@ def salvare_ndarray(
     dataframe_temporar.to_csv(nume_fisier_output)
 
     return dataframe_temporar
+
+
+# Adaugă în functii.py
+def calcul_calitate_si_contributii(matrice_date_std, componente, valori_proprii):
+    # Calitatea reprezentării punctelor (Cos2)
+    # Cos2 = Componente^2 / Distanta_la_origine^2
+    dist_origine = np.sum(matrice_date_std ** 2, axis=1)
+    calitate_puncte = (componente ** 2).T / dist_origine
+
+    # Contribuția punctelor la varianța componentelor
+    # Contrib = Componente^2 / (Nr_puncte * Valoare_proprie)
+    n = matrice_date_std.shape[0]
+    contributie_puncte = (componente ** 2) / (n * valori_proprii)
+
+    return calitate_puncte.T, contributie_puncte
+
+
+def calcul_indicatori_acp(c, alpha, r_xc):
+    # 1. Cosinusuri patratice (Calitatea reprezentarii punctelor pe axe)
+    # Formula: c^2 / distanta euclidiana la origine
+    c2 = c * c
+    cosin = (c2.T / np.sum(c2, axis=1)).T
+
+    # 2. Contributii (Cat de mult contribuie un punct la varianta unei axe)
+    # Formula: c^2 / (n * varianta_axei) sau c^2 / suma_coloana
+    contrib = c2 * 100 / np.sum(c2, axis=0)
+
+    # 3. Comunalitati (Calitatea reprezentarii variabilelor)
+    # Formula: Suma patratelor corelatiilor factoriale
+    r2 = r_xc * r_xc
+    comm = np.cumsum(r2, axis=1)
+
+    return cosin, contrib, comm
+
+
+def tabelare_varianta_factori(varianta_tupla):
+    """
+    Creează un tabel sumar pentru varianta explicată de factorii comuni.
+    Argument: varianta_tupla - returnată de model_af.get_factor_variance()
+    """
+    valori_proprii_factori = varianta_tupla[0]
+    m = len(valori_proprii_factori)
+
+    tabel_varianta = pd.DataFrame(
+        data={
+            "Varianta": valori_proprii_factori,
+            "Varianta cumulata": np.cumsum(valori_proprii_factori),
+            "Procent varianta": varianta_tupla[1] * 100,
+            "Procent cumulat": varianta_tupla[2] * 100
+        },
+        index=["F" + str(i + 1) for i in range(m)]
+    )
+    return tabel_varianta
+
+
+def calcul_partitie(h: np.ndarray, k=None):
+    # m este numărul de fuziuni, n este numărul de obiecte inițiale
+    m = h.shape[0]
+    n = m + 1
+
+    if k is None:
+        # Metoda Elbow (Partiția optimală):
+        # Căutăm cel mai mare salt între distanțele de fuziune succesive
+        diferente = h[1:, 2] - h[:m - 1, 2]
+        j = np.argmax(diferente) + 1
+        k = n - j
+    else:
+        # Dacă k este specificat, calculăm pragul pentru acel număr de clusteri
+        j = n - k
+
+    # Calculăm threshold-ul (pragul) pentru colorarea dendrogramei
+    color_threshold = (h[j, 2] + h[j - 1, 2]) / 2
+
+    # Inițializăm partiția ca fiind formată din obiecte individuale (singleton)
+    c = np.arange(n)
+
+    # Propagăm fuziunile în vectorul de partiție până la nivelul dorit
+    for i in range(j):
+        k1 = h[i, 0]
+        k2 = h[i, 1]
+        c[c == k1] = n + i
+        c[c == k2] = n + i
+
+    # Convertim codurile numerice în etichete prietenoase (ex: C1, C2...)
+    partitie = ["C" + str(i + 1) for i in pd.Categorical(c).codes]
+    return k, color_threshold, np.array(partitie)
