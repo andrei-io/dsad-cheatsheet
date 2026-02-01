@@ -40,9 +40,14 @@ dist_agregare = matrice[:, 2]
 difere_dist = np.diff(dist_agregare)
 k_optim = len(dist_agregare) - np.argmax(difere_dist)
 print("Numar optim clusteri (Elbow):", k_optim)
+prag = (dist_agregare[len(dist_agregare) - k_optim] + dist_agregare[len(dist_agregare) - k_optim - 1]) / 2
+sch.dendrogram(matrice, labels=df.index)
+plt.axhline(y=prag, color='r', linestyle='--', label=f'Prag optim (k={k_optim})')
+plt.title("Dendrograma")
+plt.show()
 
 # --- C. Partitie k-ales (Schimba k aici daca vrei altceva) ---
-k_ales = 3
+k_ales = k_optim
 labels_k = sch.fcluster(matrice, t=k_ales, criterion='maxclust')
 df['Cluster'] = labels_k
 
@@ -83,9 +88,6 @@ plt.show()
 
 # --- H. Salvare ---
 df.to_csv("Rezultat_Cluster.csv")
-
-# *VARIANTA 2: PCA (Componente Principale)*
-# *Dacă cere: Varianța, Cercul, Scoruri.*
 
 
 # *VARIANTA 2: PCA (Componente Principale)*
@@ -234,27 +236,63 @@ plt.title("Plot Scoruri Factoriale")
 plt.show()
 
 
-# *VARIANTA 4: DISCRIMINANTA (LDA)*
-# *Dacă cere: Predicție, Matrice Confuzie (Ti se da o anumita coloana!)*
 
+# *VARIANTA 4: ANALIZA DISCRIMINANTA (LDA)*
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
+from sklearn.metrics import confusion_matrix, accuracy_score, classification_report
+from sklearn.model_selection import train_test_split
 
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
-from sklearn.metrics import confusion_matrix
+# --- A. Pregatire Date si Split (Antrenare/Testare) ---
+# Tinta: coloana categorica (ex: 'DECISION' sau 'Continent')
+y = df['DECISION'].values
+X_train, X_test, y_train, y_test = train_test_split(X_std, y, test_size=0.3, random_state=42)
 
-# A. Definim Tinta (Ce vrem sa ghicim)
-# Inlocuieste 'Continent' cu ce iti cere domnul felix.
-y = df['Continent'].values
+# --- B. Model Liniar si Scoruri Discriminante (Z) ---
+lda_lin = LDA()
+lda_lin.fit(X_train, y_train)
 
-# B. Antrenam modelul
-lda = LinearDiscriminantAnalysis()
-lda.fit(X_std, y)
+# Calcul scoruri pentru tot setul original (pentru z.csv)
+z_scores = lda_lin.transform(X_std)
+df_z = pd.DataFrame(z_scores, index=df.index, columns=[f"Z{i+1}" for i in range(z_scores.shape[1])])
+df_z.to_csv("./data_out/z.csv")
 
-# C. Facem Predicția
-preziceri = lda.predict(X_std)
+# --- C. Graficul Scorurilor (Axe Discriminante) ---
+plt.figure(figsize=(8, 6))
+# Daca ai 3 clase, vei avea automat 2 axe (Z1 si Z2)
+plt.scatter(z_scores[:, 0], z_scores[:, 1], c=pd.factorize(y)[0], cmap='viridis')
+plt.xlabel("Z1"); plt.ylabel("Z2")
+plt.title("Graficul scorurilor discriminante")
+plt.show()
 
-# D. Verificam (Matricea de confuzie)
-print(confusion_matrix(y, preziceri))
+# --- D. Evaluare Model (Matrice Confuzie si Acuratete) ---
+pred_test = lda_lin.predict(X_test)
 
-# E. Salvam
-df['Prezicere'] = preziceri
-df.to_csv("Rezultat_LDA.csv")
+# Matricea de confuzie
+clase = lda_lin.classes_
+m_conf = confusion_matrix(y_test, pred_test)
+df_matc = pd.DataFrame(m_conf, index=clase, columns=clase)
+df_matc.to_csv("./data_out/matc.csv")
+
+# Indicatori la consola
+print("Acuratete Globala:", accuracy_score(y_test, pred_test))
+print("Raport Clasificare:\n", classification_report(y_test, pred_test))
+
+# --- E. Predictia pe Setul de Aplicare (Pacienti_apply.csv) ---
+df_apply = pd.read_csv("./data_in/Pacienti_apply.csv", index_col=0)
+# Selectam aceleasi coloane si standardizam cu scaler-ul initial
+X_apply = df_apply[cols].values
+X_apply_std = scaler.transform(X_apply)
+
+# Facem predictia si salvam
+pred_apply = lda_lin.predict(X_apply_std)
+df_apply['PREDICTIE'] = pred_apply
+df_apply.to_csv("./data_out/Pacienti_results.csv")
+
+# --- F. Vizualizarea Distributiilor pe prima axa ---
+plt.figure()
+for clasa in clase:
+    subset = z_scores[y == clasa]
+    plt.hist(subset[:, 0], alpha=0.5, label=clasa)
+plt.title("Distributia pe axa Z1")
+plt.legend()
+plt.show()
