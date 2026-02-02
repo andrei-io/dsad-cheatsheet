@@ -305,3 +305,97 @@ for clasa in clase:
 plt.title("Distributia pe axa Z1")
 plt.legend()
 plt.show()
+
+# *VARIANTA 5: ANALIZA CORELATIILOR CANONICE (CCA)*
+
+from sklearn.cross_decomposition import CCA
+from sklearn.preprocessing import StandardScaler
+import seaborn as sns
+from sklearn.cross_decomposition import CCA
+from sklearn.preprocessing import StandardScaler
+
+# --- A. Pregatire seturi de variabile (X si Y) ---
+# Exemplu: X sunt indicatori economici, Y sunt indicatori sociali
+cols_x = ['Ind1', 'Ind2'] # Inlocuieste cu coloanele tale
+cols_y = ['Ind3', 'Ind4']
+X_set = df[cols_x].values
+Y_set = df[cols_y].values
+
+# Standardizam ambele seturi
+X_s = StandardScaler().fit_transform(X_set)
+Y_s = StandardScaler().fit_transform(Y_set)
+
+# --- B. Modelul CCA si Scoruri Canonice ---
+n_comp = min(X_s.shape[1], Y_s.shape[1])
+cca = CCA(n_components=n_comp)
+Z, U = cca.fit_transform(X_s, Y_s)
+# U - scorurile pentru setul X, V - scorurile pentru setul Y
+
+# --- C. Corelatii Canonice (intre perechile U si V) ---
+cor_can = np.array([np.corrcoef(Z[:, i], U[:, i])[0, 1] for i in range(n_comp)])
+print("Corelatii canonice (r):", cor_can)
+
+# --- D. Relevanta radacinilor (Test Bartlett adaptat) ---
+def test_bartlett(r, n):
+    p = X_s.shape[1]
+    q = Y_s.shape[1]
+    m = n - 1 - 0.5 * (p + q + 1)
+    chi_sq = -m * np.log(np.prod(1 - r**2))
+    df_bartlett = p * q
+    return chi_sq, df_bartlett
+
+chi_val, df_val = test_bartlett(cor_can, len(df))
+print(f"Test Bartlett: Chi_sq={chi_val}, df={df_val}")
+
+# --- E. Corelatii variabile observate - variabile canonice (Structura) ---
+# Corelatii X cu U
+cor_x_u = np.corrcoef(X_s, Z, rowvar=False)[:X_s.shape[1], X_s.shape[1]:]
+# Corelatii Y cu V
+cor_y_v = np.corrcoef(Y_s, U, rowvar=False)[:Y_s.shape[1], Y_s.shape[1]:]
+
+# --- F. Cercul Corelatiilor (Biplot Corelatii) ---
+plt.figure(figsize=(8, 8))
+plt.scatter(cor_x_u[:, 0], cor_x_u[:, 1], color='r', label='Set X')
+plt.scatter(cor_y_v[:, 0], cor_y_v[:, 1], color='b', label='Set Y')
+for i, txt in enumerate(cols_x): plt.text(cor_x_u[i,0], cor_x_u[i,1], txt)
+for i, txt in enumerate(cols_y): plt.text(cor_y_v[i,0], cor_y_v[i,1], txt)
+plt.title("Cercul Corelatiilor Canonice")
+plt.legend(); plt.show()
+
+# --- G. Corelograma Corelatii ---
+df_cor_xu = pd.DataFrame(cor_x_u, index=cols_x, columns=[f"U{i+1}" for i in range(n_comp)])
+sns.heatmap(df_cor_xu, annot=True, cmap='RdBu')
+plt.title("Corelatii Variabile X - Scoruri U")
+plt.show()
+
+# --- H. Plot Instante (Biplot Scoruri U1 vs V1) ---
+plt.figure()
+plt.scatter(Z[:, 0], U[:, 0])
+plt.xlabel("U1 (Set X)"); plt.ylabel("V1 (Set Y)")
+plt.title("Instante in spatiul primei perechi canonice")
+plt.show()
+
+# --- I. Plot Instante – primele doua radacini canonice ---
+plt.figure(figsize=(8, 6))
+
+# Set Barbati (Z)
+plt.scatter(Z[:, 0], Z[:, 1], marker='o', label='Barbati (Z)')
+
+# Set Femei (U)
+plt.scatter(U[:, 0], U[:, 1], marker='x', label='Femei (U)')
+
+plt.xlabel("Radacina canonica 1")
+plt.ylabel("Radacina canonica 2")
+plt.title("Plot instante – primele doua radacini canonice")
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# --- I. Varianta Explicata si Redundanta ---
+# Varianta explicata de variabilele canonice pentru setul lor
+var_expl_x = np.mean(cor_x_u**2, axis=0)
+var_expl_y = np.mean(cor_y_v**2, axis=0)
+# Redundanta (cata varianta din Y e explicata de U)
+redundanta_y = var_expl_y * (cor_can**2)
+print("Varianta explicata X:", var_expl_x)
+print("Redundanta Y (prin X):", redundanta_y)
