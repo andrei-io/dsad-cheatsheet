@@ -29,25 +29,34 @@ from sklearn.decomposition import PCA
 
 # --- A. Matricea Ierarhie si Dendrograma ---
 matrice = sch.linkage(X_std, method='ward')
-print("Matricea:\n", matrice)
+print("Matricea ierarhică:\n", matrice)
 
 sch.dendrogram(matrice, labels=df.index)
-plt.title("Dendrograma")
+plt.title("Dendrograma (Ward)")
 plt.show()
 
 # --- B. Calcul k_optim (Elbow pe distante) ---
-dist_agregare = matrice[:, 2]
-difere_dist = np.diff(dist_agregare)
-k_optim = len(dist_agregare) - np.argmax(difere_dist)
-print("Numar optim clusteri (Elbow):", k_optim)
-prag = (dist_agregare[len(dist_agregare) - k_optim] + dist_agregare[len(dist_agregare) - k_optim - 1]) / 2
-sch.dendrogram(matrice, labels=df.index)
-plt.axhline(y=prag, color='r', linestyle='--', label=f'Prag optim (k={k_optim})')
-plt.title("Dendrograma")
+distante = matrice[:, 2]
+diff_dist = np.diff(distante)
+idx_max = np.argmax(diff_dist)
+
+prag_opt = distante[idx_max]
+print("Prag optim:", prag_opt)
+
+plt.figure(figsize=(10, 5))
+sch.dendrogram(
+    matrice,
+    labels=df.index,
+    color_threshold=prag_opt
+)
+plt.axhline(y=prag_opt, color='red', linestyle='--', label='Prag optim')
+plt.legend()
+plt.title("Dendrograma – partiția optimă")
 plt.show()
 
 # --- C. Partitie k-ales (Schimba k aici daca vrei altceva) ---
-k_ales = k_optim
+# NE UITAM PE ULTIMA DENDOGRAMA
+k_ales = 4
 labels_k = sch.fcluster(matrice, t=k_ales, criterion='maxclust')
 df['Cluster'] = labels_k
 
