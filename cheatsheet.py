@@ -57,6 +57,7 @@ plt.show()
 # --- C. Partitie k-ales (Schimba k aici daca vrei altceva) ---
 # NE UITAM PE ULTIMA DENDOGRAMA
 k_ales = 4
+prag_k=matrice[-(k_ales-1),2]
 labels_k = sch.fcluster(matrice, t=k_ales, criterion='maxclust')
 df['Cluster'] = labels_k
 
