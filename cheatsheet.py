@@ -248,7 +248,7 @@ plt.show()
 
 
 # *VARIANTA 4: ANALIZA DISCRIMINANTA (LDA)*
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA, QuadraticDiscriminantAnalysis as QDA
 from sklearn.metrics import confusion_matrix, accuracy_score, classification_report
 from sklearn.model_selection import train_test_split
 
@@ -258,7 +258,7 @@ y = df['DECISION'].values
 X_train, X_test, y_train, y_test = train_test_split(X_std, y, test_size=0.3, random_state=42)
 
 # --- B. Model Liniar si Scoruri Discriminante (Z) ---
-lda_lin = LDA()
+lda_lin = LDA() # Sau QDA pentru model bayesian
 lda_lin.fit(X_train, y_train)
 
 # Calcul scoruri pentru tot setul original (pentru z.csv)
