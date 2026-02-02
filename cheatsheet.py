@@ -107,7 +107,7 @@ import seaborn as sns
 # --- A. Modelul PCA si Varianta ---
 pca = PCA()
 C = pca.fit_transform(X_std) # Scorurile (Componentele)
-alpha = pca.explained_variance_ # Valorile proprii (Eigenvalues)
+alpha = pca.explained_variance_ # Valorile proprii (Eigenvalues) - se numeste si varianta
 proportie = pca.explained_variance_ratio_ # Varianta explicata (%)
 
 # SALVARE SCORURI
@@ -305,6 +305,21 @@ for clasa in clase:
     plt.hist(subset[:, 0], alpha=0.5, label=clasa)
 plt.title("Distributia pe axa Z1")
 plt.legend()
+plt.show()
+
+# --- G. Graficul scorurilor discriminante în primele două axe ---
+plt.figure(figsize=(8, 6))
+for clasa in clase:
+    subset = z_scores[y == clasa]
+    # subset[:, 0] este axa Z1, subset[:, 1] este axa Z2
+    plt.scatter(subset[:, 0], subset[:, 1], label=clasa, alpha=0.7)
+
+plt.xlabel("Axa Discriminantă $Z_1$")
+plt.ylabel("Axa Discriminantă $Z_2$")
+plt.title("Scorurile discriminante în primele două axe ($Z_1$ și $Z_2$)")
+plt.legend()
+plt.axhline(0, color='black', linestyle='--', linewidth=0.5) # Linie orizontală pt origine
+plt.axvline(0, color='black', linestyle='--', linewidth=0.5) # Linie verticală pt origine
 plt.show()
 
 # *VARIANTA 5: ANALIZA CORELATIILOR CANONICE (CCA)*
